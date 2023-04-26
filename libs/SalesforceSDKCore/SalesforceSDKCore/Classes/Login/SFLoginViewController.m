@@ -45,6 +45,7 @@
 
 // Reference to previous user account
 @property (nonatomic, strong) SFUserAccount *previousUserAccount;
+@property (strong, nonatomic) UIWindow *backgroundWindow;
 @end
 
 @implementation SFLoginViewController
@@ -57,6 +58,11 @@
         _config = [[SFSDKLoginViewControllerConfig alloc] init];
         [[SFUserAccountManager sharedInstance] addDelegate:self];
     }
+    UIScreen* screen = [UIScreen mainScreen];
+    UIWindow *backgroundWindow = [[UIWindow alloc] initWithFrame:screen.bounds];
+    backgroundWindow.backgroundColor = [UIColor whiteColor];
+    backgroundWindow.windowLevel = UIWindowLevelAlert;
+    self.backgroundWindow = backgroundWindow;
     return self;
 }
 
@@ -86,10 +92,25 @@
 
 - (void)viewWillAppear:(BOOL)animated {
     [super viewWillAppear:animated];
+    [[NSNotificationCenter defaultCenter] addObserver:self
+           selector:@selector(appWillResignActive:)
+           name:UIApplicationWillResignActiveNotification
+           object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self
+           selector:@selector(appDidBecomeActive:)
+           name:UIApplicationDidBecomeActiveNotification
+           object:nil];
     if (self.showNavbar) {
         [self styleNavigationBar:self.navBar];
     }
     [self setupBackButton];
+}
+
+- (void)viewWillDisappear:(BOOL)animated{
+    [super viewWillDisappear:animated];
+    self.backgroundWindow.hidden = YES;
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationWillResignActiveNotification object:nil];
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationDidBecomeActiveNotification object:nil];
 }
 
 - (void)viewDidAppear:(BOOL)animated {
@@ -265,6 +286,16 @@
         self.oauthView.frame = CGRectMake(x, y, w, h);
         [self.view addSubview:_oauthView];
     }
+}
+
+- (void) appWillResignActive:(NSNotification *) notification
+{
+    self.backgroundWindow.hidden = NO;
+}
+
+- (void) appDidBecomeActive:(NSNotification *) notification
+{
+    self.backgroundWindow.hidden = YES;
 }
 
 #pragma mark - Action Methods
